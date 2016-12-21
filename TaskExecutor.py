@@ -12,12 +12,14 @@ from aria2.Aria2Rpc import Aria2JsonRpc
 from config import *
 
 
+# 对密码md5加密
 def md5lower(pwd):
     md5c = hashlib.md5()
     md5c.update(pwd)
     return md5c.hexdigest().lower()
 
 
+# 登录验证
 def auth(session, user_data):
     if not session:
         session = requests.session()
@@ -30,6 +32,7 @@ def auth(session, user_data):
         return None
 
 
+# 检查session是否登录通过
 def check_auth(session, user_data):
     if session:
         r = session.get(CHECK_URL)
@@ -42,6 +45,7 @@ def check_auth(session, user_data):
         return auth(session, user_data)
 
 
+# 获得任务消息
 def consumer_msg(session, topic):
     msg_response = session.get(CONSUMER_URL, params={"topic": topic})
     if msg_response:
@@ -50,23 +54,22 @@ def consumer_msg(session, topic):
         return None
 
 
+# 创建python脚本文件
 def build_py_file(data):
-    if data and data['code'] == 200:
-        contents = data["data"]["contents"]
-        filename = "excfile/python_%s.py" % data["data"]["id"]
-        exc_file = codecs.open(filename, "w", encoding='utf-8')
-        exc_file.write(contents)
-        exc_file.close()
-        return os.path.abspath(filename)
-    else:
-        return None
+    contents = data["data"]["contents"]
+    filename = "excfile/python_%s.py" % data["data"]["id"]
+    exc_file = codecs.open(filename, "w", encoding='utf-8')
+    exc_file.write(contents)
+    exc_file.close()
+    return os.path.abspath(filename)
 
 
-def callback(session, id, status):
-    session.get(CALLBACK_URL, params={"id": id, "type": status})
+# 消息回调，返回任务执行状态
+def callback(session, msg_id, status):
+    session.get(CALLBACK_URL, params={"id": msg_id, "type": status})
 
 
-# 订阅下载消息
+# 订阅下载消息,并执行下载 （使用aria2下载）
 def execute_download_script(session):
     session = check_auth(session, USER_AUTH)
     data = consumer_msg(session, TOPIC["download"])
@@ -104,6 +107,7 @@ def execute_python_script(session):
         print(data)
 
 
+# 定时执行
 def loop_run(fun, interval, arg, num=None):
     fun(arg)
     if num:
@@ -121,5 +125,7 @@ if __name__ == '__main__':
     s = requests.session()
     auth(s, USER_AUTH)
     # 定时拉取消息任务  每19分钟拉取一次
+    # 定时执行拉取下载任务
     Timer(1, loop_run, (execute_download_script, 60 * 19, s)).start()
+    # 定时执行拉取python脚本任务
     Timer(1, loop_run, (execute_python_script, 60 * 19, s)).start()
