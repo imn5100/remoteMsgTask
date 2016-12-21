@@ -80,7 +80,7 @@ def execute_download_script(session):
         try:
             url = data["data"]["contents"]
             aria2_client = Aria2JsonRpc(RPC_URL, ARIA2_PATH)
-            if aria2_client.addUris([url], os.path.abspath("excfile")) == 200:
+            if aria2_client.addUris([url], os.path.abspath("excfile")):
                 callback(session, data["data"]["id"], STATUS_MAP["over"])
             else:
                 callback(session, data["data"]["id"], STATUS_MAP["fail"])
