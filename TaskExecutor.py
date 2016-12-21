@@ -119,5 +119,5 @@ if __name__ == '__main__':
     s = requests.session()
     auth(s, USER_AUTH)
     # 每19分钟运行一次
-    Timer(1, loop_run, (execute_download_script, 60 * 1, s)).start()
-    Timer(1, loop_run, (execute_python_script, 60 * 1, s)).start()
+    Timer(1, loop_run, (execute_download_script, 60 * 19, s)).start()
+    Timer(1, loop_run, (execute_python_script, 60 * 19, s)).start()
