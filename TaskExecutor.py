@@ -7,6 +7,7 @@ import subprocess
 from threading import Timer
 
 import requests
+import sys
 
 from aria2.Aria2Rpc import Aria2JsonRpc
 from config import *
@@ -72,6 +73,8 @@ def callback(session, msg_id, status):
 # 订阅下载消息,并执行下载 （使用aria2下载）
 def execute_download_script(session):
     session = check_auth(session, USER_AUTH)
+    if not session:
+        sys.exit(0)
     data = consumer_msg(session, TOPIC["download"])
     if data and data['code'] == 200:
         try:
@@ -92,6 +95,8 @@ def execute_download_script(session):
 # 订阅python脚本消息
 def execute_python_script(session):
     session = check_auth(session, USER_AUTH)
+    if not session:
+        sys.exit(0)
     data = consumer_msg(session, TOPIC["python"])
     if data and data['code'] == 200:
         try:
