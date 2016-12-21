@@ -66,6 +66,7 @@ def callback(session, id, status):
     session.get(CALLBACK_URL, params={"id": id, "type": status})
 
 
+# 订阅下载消息
 def execute_download_script(session):
     session = check_auth(session, USER_AUTH)
     data = consumer_msg(session, TOPIC["download"])
@@ -85,6 +86,7 @@ def execute_download_script(session):
         print(data)
 
 
+# 订阅python脚本消息
 def execute_python_script(session):
     session = check_auth(session, USER_AUTH)
     data = consumer_msg(session, TOPIC["python"])
@@ -118,6 +120,6 @@ def loop_run(fun, interval, arg, num=None):
 if __name__ == '__main__':
     s = requests.session()
     auth(s, USER_AUTH)
-    # 每19分钟运行一次
+    # 定时拉取消息任务  每19分钟拉取一次
     Timer(1, loop_run, (execute_download_script, 60 * 19, s)).start()
     Timer(1, loop_run, (execute_python_script, 60 * 19, s)).start()
