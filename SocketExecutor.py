@@ -5,10 +5,8 @@
 #
 import json
 from socket import *
-import sys
 
 import redis
-import time
 
 
 def test_socket():
@@ -26,11 +24,12 @@ def test_socket():
     # if not data:  # 直接回车就没有输入内容,退出
     #     print 'client quit'
     #     clientSock.close()  # 要close一下
-    clientSock.send('{"appkey": "123456", "type": 1}' + "\n")
+    clientSock.send(
+            '{"appkey": "76d44f617b70c97e118c81dc579d9aa5", "type": 1,"appSecret":"a0de68bc6581303c202c3cb57567878a","unused":"中文测试"}' + "\n")
     while True:
         # 阻塞到收到消息
         data = clientSock.recv(BUFSIZE)
-        if data == "":
+        if data == "" or data == "quit":
             # When the remote end is closed and all data is read, return the empty string.
             clientSock.close()
             break
@@ -47,10 +46,10 @@ def send_redisMsg():
     }
     msg = {
         "topic": "socketTask",
-        "content": {"appkey": "123456", "contents": download_msg}
+        "content": {"appkey": "76d44f617b70c97e118c81dc579d9aa5", "contents": "quit"}
     }
     print (redis_client.publish("task_message", json.dumps(msg, sort_keys=True)))
 
 
 if __name__ == '__main__':
-    send_redisMsg()
+    test_socket()
