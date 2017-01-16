@@ -11,7 +11,7 @@ import redis
 
 def test_socket():
     BUFSIZE = 8192
-    serverAddr = ('localhost', 8001)
+    serverAddr = ('139.196.45.8', 8001)
     clientSock = socket(AF_INET, SOCK_STREAM)
 
     try:
@@ -25,7 +25,7 @@ def test_socket():
     #     print 'client quit'
     #     clientSock.close()  # 要close一下
     clientSock.send(
-            '{"appkey": "76d44f617b70c97e118c81dc579d9aa5", "type": 1,"appSecret":"a0de68bc6581303c202c3cb57567878a","unused":"中文测试"}' + "\n")
+            '{"appkey": "*", "type": 1,"appSecret":"*","unused":"中文测试"}' + "\n")
     while True:
         # 阻塞到收到消息
         data = clientSock.recv(BUFSIZE)
