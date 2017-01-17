@@ -1,1 +1,1 @@
-"D:/Program Files/aria2-1.27.1/aria2c.exe"  --enable-rpc --rpc-listen-all=true --rpc-allow-origin-all -c
+"aria2/aria2c.exe"  --enable-rpc --rpc-listen-all=true --rpc-allow-origin-all -c

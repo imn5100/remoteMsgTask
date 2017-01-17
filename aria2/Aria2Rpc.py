@@ -42,6 +42,7 @@ class Aria2JsonRpc(object):
         except Exception:
             return False
 
+    # urls 是url数组 否则传参错误
     def addUris(self, urls, dir=None, out=None):
         params = []
         download_config = {}
