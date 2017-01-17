@@ -70,6 +70,9 @@ def connect_socket():
                         data = json.loads(data)
                         # 判断传来的数据是否是有必须参数
                         if data.has_key("appkey") and data.has_key("contents") and data.has_key("topic"):
+                            if data["appkey"] != APP_KEY:
+                                # appkey不一致的消息不处理
+                                continue
                             if data["topic"].lower() == "python":
                                 if data.has_key("id"):
                                     filename = build_py_file(data["contents"], data["id"])

@@ -27,6 +27,6 @@ RPC_URL = "http://localhost:6800/jsonrpc?tm=%s"
 ARIA2_PATH = "aria2/"
 
 # scoket 远程任务执行相关
-APP_KEY = "76d44f617b70c97e118c81dc579d9aa5"
-APP_SECRET = "a0de68bc6581303c202c3cb57567878a"
-SERVER_ADDR = ('localhost', 8001)
+APP_KEY = "*"
+APP_SECRET = "*"
+SERVER_ADDR = ('139.196.45.8', 8001)
