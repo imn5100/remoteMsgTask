@@ -68,7 +68,7 @@ def connect_socket():
         print ('recieve:' + data)
     else:
         # 每分钟发送 心跳
-        Timer(1, loop_run, (send_heartbeat, 10, clientSock)).start()
+        Timer(1, loop_run, (send_heartbeat, 60, clientSock)).start()
         # 否则阻塞服务器数据
         while True:
             # 阻塞到收到消息
