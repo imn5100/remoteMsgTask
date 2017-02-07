@@ -2,13 +2,27 @@
 
 import codecs
 import json
+import os
 import subprocess
 import time
-import os
 from socket import *
+from threading import Timer
 
+from TaskExecutor import loop_run
 from aria2.Aria2Rpc import Aria2JsonRpc
 from config import RPC_URL, ARIA2_PATH, APP_KEY, APP_SECRET, SERVER_ADDR
+
+# ping 用于保持连接的心跳数据
+heartbeat_data = {
+    "type": "PING",
+    "appkey": APP_KEY
+}
+# 构建连接认证参数
+auth_data = {
+    "type": "AUTH",
+    "appkey": APP_KEY,
+    "appsecret": APP_SECRET
+}
 
 
 # 创建python脚本文件 传入内容和编号，编号可以避免覆盖原来执行过的文件
@@ -28,6 +42,16 @@ def download_aria2(url, aria2_client, save_path=None):
         aria2_client.addUris([url], os.path.abspath("excfile"))
 
 
+# 发送心跳，如果发生失败则退出程序
+def send_heartbeat(client):
+    try:
+        client.send(json.dumps(heartbeat_data))
+    except Exception as e:
+        print 'heartbeat connect error : ', e
+        exit()
+
+
+# 创建连接，并保存连接，等待数据
 def connect_socket():
     BUFSIZE = 8192
     clientSock = socket(AF_INET, SOCK_STREAM)
@@ -35,13 +59,7 @@ def connect_socket():
         clientSock.connect(SERVER_ADDR)
     except Exception as e:
         print 'connect error : ', e
-        sys.exit()
-    # 构建连接认证参数
-    auth_data = {
-        "type": 1,
-        "appkey": APP_KEY,
-        "appsecret": APP_SECRET
-    }
+        exit()
     clientSock.send(json.dumps(auth_data) + "\n")
     data = clientSock.recv(BUFSIZE)
     aria2_client = None
@@ -49,6 +67,8 @@ def connect_socket():
     if data.lower() != "success":
         print ('recieve:' + data)
     else:
+        # 每分钟发送 心跳
+        Timer(1, loop_run, (send_heartbeat, 10, clientSock)).start()
         # 否则阻塞服务器数据
         while True:
             # 阻塞到收到消息
