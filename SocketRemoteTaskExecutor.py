@@ -15,13 +15,13 @@ from config import RPC_URL, ARIA2_PATH, APP_KEY, APP_SECRET, SERVER_ADDR
 # ping 用于保持连接的心跳数据
 heartbeat_data = {
     "type": "PING",
-    "appkey": APP_KEY
+    "sessionId": ""
 }
 # 构建连接认证参数
 auth_data = {
     "type": "AUTH",
-    "appkey": APP_KEY,
-    "appsecret": APP_SECRET
+    "appKey": APP_KEY,
+    "appSecret": APP_SECRET
 }
 
 
@@ -48,6 +48,7 @@ def send_heartbeat(client):
         client.send(json.dumps(heartbeat_data))
     except Exception as e:
         print 'heartbeat connect error : ', e
+        client.close()
         exit()
 
 
@@ -64,9 +65,12 @@ def connect_socket():
     data = clientSock.recv(BUFSIZE)
     aria2_client = None
     # 第一次连接发送认证数据,返回数据非成功则关闭连接
-    if data.lower() != "success":
+    if data.lower().find("success") < 0:
         print ('recieve:' + data)
     else:
+        data = json.loads(data)
+        if data.has_key("success"):
+            heartbeat_data["sessionId"] = data["success"]
         # 每分钟发送 心跳
         Timer(1, loop_run, (send_heartbeat, 60, clientSock)).start()
         # 否则阻塞服务器数据
