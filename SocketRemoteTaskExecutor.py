@@ -17,7 +17,13 @@ heartbeat_data = {
     "type": "PING",
     "sessionId": ""
 }
-# 构建连接认证参数
+# ASK 数据请求参数类型
+ask_data = {
+    "type": "ASK",
+    "sessionId": "",
+    "contents": ""
+}
+# 连接认证参数
 auth_data = {
     "type": "AUTH",
     "appKey": APP_KEY,
@@ -42,6 +48,22 @@ def download_aria2(url, aria2_client, save_path=None):
         aria2_client.addUris([url], os.path.abspath("excfile"))
 
 
+# 处理服务端来源的任务消息数据，需要认证appKey相同
+def msg_handler(data, aria2_client):
+    if data["appKey"] != APP_KEY:
+        return
+    if data["topic"].lower() == "python":
+        if data.has_key("id"):
+            filename = build_py_file(data["contents"], data["id"])
+        else:
+            filename = build_py_file(data["contents"], str(time.time()))
+        subprocess.call("python " + filename)
+    elif data["topic"].lower() == "download":
+        if not aria2_client or not aria2_client.isAlive():
+            aria2_client = Aria2JsonRpc(RPC_URL, ARIA2_PATH)
+        download_aria2(data["contents"], aria2_client)
+
+
 # 发送心跳，如果发生失败则退出程序
 def send_heartbeat(client):
     try:
@@ -52,68 +74,51 @@ def send_heartbeat(client):
         exit()
 
 
-# 创建连接，并保存连接，等待数据
-def connect_socket():
-    BUFSIZE = 8192
-    clientSock = socket(AF_INET, SOCK_STREAM)
-    try:
-        clientSock.connect(SERVER_ADDR)
-    except Exception as e:
-        print 'connect error : ', e
-        exit()
-    clientSock.send(json.dumps(auth_data) + "\n")
-    data = clientSock.recv(BUFSIZE)
-    aria2_client = None
-    # 第一次连接发送认证数据,返回数据非成功则关闭连接
+# 连接发送认证数据,成功后开启心跳
+def login_auth(client_sock):
+    client_sock.send(json.dumps(auth_data) + "\n")
+    data = client_sock.recv(8192)
     if data.lower().find("success") < 0:
-        print ('recieve:' + data)
+        print ('Receive:' + data)
+        return False
     else:
         data = json.loads(data)
         if data.has_key("success"):
             heartbeat_data["sessionId"] = data["success"]
         # 每分钟发送 心跳
-        Timer(1, loop_run, (send_heartbeat, 60, clientSock)).start()
-        # 否则阻塞服务器数据
-        while True:
-            # 阻塞到收到消息
-            data = clientSock.recv(BUFSIZE)
-            # 服务端关闭连接时会发送一个空字符串
-            if data == "":
-                # When the remote end is closed and all data is read, return the empty string.
-                break
-            else:
-                print ('recieve:' + data)
-                # 非json字符输出后无视
-                if not data.startswith("{"):
-                    continue
-                try:
-                    # 转化json数据
-                    # {"appkey":"*","contents":"http://shawblog.me","createTime":1484621268635,"id":14,"opTime":1484621268635,"status":1,"topic":"Download"}
-                    if data:
-                        data = json.loads(data)
-                        # 判断传来的数据是否是有必须参数
-                        if data.has_key("appkey") and data.has_key("contents") and data.has_key("topic"):
-                            if data["appkey"] != APP_KEY:
-                                # appkey不一致的消息不处理
-                                continue
-                            if data["topic"].lower() == "python":
-                                if data.has_key("id"):
-                                    filename = build_py_file(data["contents"], data["id"])
-                                else:
-                                    filename = build_py_file(data["contents"], str(time.time()))
-                                subprocess.call("python " + filename)
-                            elif data["topic"].lower() == "download":
-                                try:
-                                    if not aria2_client or not aria2_client.isAlive():
-                                        aria2_client = Aria2JsonRpc(RPC_URL, ARIA2_PATH)
-                                    download_aria2(data["contents"], aria2_client)
-                                except:
-                                    print("Download Error Please check the aria2 is open")
-                                    break
-                except Exception as e:
-                    print("Execute task fail Exception:")
-                    print(e)
-    clientSock.close()
+        Timer(1, loop_run, (send_heartbeat, 60, client_sock)).start()
+        return True
+
+
+# 创建连接，验证登录成功后，设置心跳线程&阻塞等待数据
+def connect_socket():
+    client_sock = socket(AF_INET, SOCK_STREAM)
+    aria2_client = None
+    try:
+        client_sock.connect(SERVER_ADDR)
+    except Exception as e:
+        print ('connect error : ', e)
+        exit()
+    try:
+        if login_auth(client_sock):
+            while True:
+                data = client_sock.recv(8192)
+                print ('Receive:' + data)
+                if data is None or data == "" or data == 'quit':
+                    break
+                else:
+                    if not data.startswith("{"):
+                        continue
+                    else:
+                        try:
+                            data = json.loads(data)
+                            if data.has_key("appKey") and data.has_key("contents") and data.has_key("topic"):
+                                msg_handler(data, aria2_client)
+                        except Exception as e:
+                            print("Execute task fail Exception:")
+                            print(e)
+    finally:
+        client_sock.close()
 
 
 if __name__ == '__main__':
