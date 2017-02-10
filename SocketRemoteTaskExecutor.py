@@ -4,6 +4,7 @@ import codecs
 import json
 import os
 import subprocess
+import threading
 import time
 from socket import *
 from threading import Timer
@@ -74,7 +75,7 @@ def send_heartbeat(client):
         exit()
 
 
-# 连接发送认证数据,成功后开启心跳
+# 连接发送认证数据,成功后开启心跳 返回心跳线程
 def login_auth(client_sock):
     client_sock.send(json.dumps(auth_data) + "\n")
     data = client_sock.recv(8192)
@@ -86,7 +87,9 @@ def login_auth(client_sock):
         if data.has_key("success"):
             heartbeat_data["sessionId"] = data["success"]
         # 每分钟发送 心跳
-        Timer(1, loop_run, (send_heartbeat, 60, client_sock)).start()
+        t = Timer(1, loop_run, (send_heartbeat, 60, client_sock))
+        t.setDaemon(True)
+        t.start()
         return True
 
 
