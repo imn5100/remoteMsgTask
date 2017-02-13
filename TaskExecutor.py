@@ -128,7 +128,12 @@ def loop_run(fun, interval, arg, num=None):
 
 if __name__ == '__main__':
     s = requests.session()
+    # 登录成功后，session中包含cookie
     auth(s, USER_AUTH)
+    # 从session获取cookie
+    # cookies_dict = requests.utils.dict_from_cookiejar(s.cookies)
+    # 设置session的cookie
+    # s.cookies = requests.utils.cookiejar_from_dict({'SESSION': 'c382f045-c766-495c-a4bf-b66981319ad4'})
     # 定时拉取消息任务  每19分钟拉取一次
     # 定时执行拉取下载任务
     Timer(1, loop_run, (execute_download_script, 60 * 19, s)).start()
