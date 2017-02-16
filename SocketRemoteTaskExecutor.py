@@ -88,6 +88,7 @@ def login_auth(client_sock):
             heartbeat_data["sessionId"] = data["success"]
         # 每分钟发送 心跳
         t = Timer(1, loop_run, (send_heartbeat, 60, client_sock))
+        # 设置心跳线程为守护线程，保证主线程退出后。此线程也退出
         t.setDaemon(True)
         t.start()
         return True
