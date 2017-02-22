@@ -117,6 +117,7 @@ def get_message(client, aria2_client):
                     except Exception as e:
                         print("Execute task fail Exception:")
                         print(e)
+    # 捕获socket连接错误，出错直接退出线程
     except Exception as e:
         print 'Get Message Error: ', e
         client.close()
@@ -139,8 +140,8 @@ def connect_socket():
             t.setDaemon(True)
             t.start()
             # 消息输出
+            to_app_key = raw_input("Please Input to AppKey:\n")
             while True:
-                to_app_key = raw_input("Please Input to AppKey:\n")
                 send_msg = raw_input("Please Input Message(Input quit or empty to exit!):\n")
                 if send_msg == "quit" or send_msg == "":
                     break
