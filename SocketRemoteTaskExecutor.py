@@ -22,7 +22,8 @@ heartbeat_data = {
 ask_data = {
     "type": "ASK",
     "sessionId": "",
-    "contents": ""
+    "contents": "",
+    "toAppKey": ""
 }
 # 连接认证参数
 auth_data = {
@@ -85,13 +86,41 @@ def login_auth(client_sock):
     else:
         data = json.loads(data)
         if data.has_key("success"):
+            # 登录验证成功，保存session
             heartbeat_data["sessionId"] = data["success"]
+            ask_data["sessionId"] = data["success"]
         # 每分钟发送 心跳
         t = Timer(1, loop_run, (send_heartbeat, 60, client_sock))
         # 设置心跳线程为守护线程，保证主线程退出后。此线程也退出
         t.setDaemon(True)
         t.start()
         return True
+
+
+# 获取消息方法，一直阻塞获取服务端传来的消息
+def get_message(client, aria2_client):
+    try:
+        while True:
+            data = client.recv(8192)
+            print ('Receive:' + data)
+            if data is None or data == "" or data == 'quit':
+                break
+            else:
+                if not data.startswith("{"):
+                    continue
+                else:
+                    # 数据转换异常直接捕获，不影响程序正常运行
+                    try:
+                        data = json.loads(data)
+                        if data.has_key("appKey") and data.has_key("contents") and data.has_key("topic"):
+                            msg_handler(data, aria2_client)
+                    except Exception as e:
+                        print("Execute task fail Exception:")
+                        print(e)
+    except Exception as e:
+        print 'Get Message Error: ', e
+        client.close()
+        exit()
 
 
 # 创建连接，验证登录成功后，设置心跳线程&阻塞等待数据
@@ -105,22 +134,20 @@ def connect_socket():
         exit()
     try:
         if login_auth(client_sock):
+            # 启动异步消息监听
+            t = threading.Thread(target=get_message, args=(client_sock, aria2_client))
+            t.setDaemon(True)
+            t.start()
+            # 消息输出
             while True:
-                data = client_sock.recv(8192)
-                print ('Receive:' + data)
-                if data is None or data == "" or data == 'quit':
+                to_app_key = raw_input("Please Input to AppKey:\n")
+                send_msg = raw_input("Please Input Message(Input quit or empty to exit!):\n")
+                if send_msg == "quit" or send_msg == "":
                     break
-                else:
-                    if not data.startswith("{"):
-                        continue
-                    else:
-                        try:
-                            data = json.loads(data)
-                            if data.has_key("appKey") and data.has_key("contents") and data.has_key("topic"):
-                                msg_handler(data, aria2_client)
-                        except Exception as e:
-                            print("Execute task fail Exception:")
-                            print(e)
+                ask_data['contents'] = send_msg
+                ask_data['toAppKey'] = to_app_key
+                client_sock.send(json.dumps(ask_data))
+
     finally:
         client_sock.close()
 
