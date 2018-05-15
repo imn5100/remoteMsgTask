@@ -1,1 +1,0 @@
-"aria2/aria2c.exe"  --enable-rpc --rpc-listen-all=true --rpc-allow-origin-all -c
