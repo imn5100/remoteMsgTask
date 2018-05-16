@@ -5,11 +5,13 @@ import time
 
 import requests
 
+from config import MUST_OPEN_ARIA2C
+
 
 class Aria2JsonRpc(object):
     def __init__(self, rpc_url):
         self.rpc_url = rpc_url
-        if not self.isAlive():
+        if MUST_OPEN_ARIA2C and not self.isAlive():
             raise Exception("Please start aria2c rpc service")
 
     def execuetJsonRpcCmd(self, method, param=None):
