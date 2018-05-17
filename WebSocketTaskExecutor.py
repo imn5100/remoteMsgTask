@@ -13,7 +13,9 @@ aria2_client = Aria2JsonRpc(RPC_URL)
 
 
 # 传入下载url（可以是磁链）和下载保存路径，如果路径为空默认保存于excfile 文件目录下
-def download_aria2(url, save_path=None):
+def download_by_aria2(data):
+    url = data["contents"]
+    save_path = data['path'] if ('path' in data and str(data['path']) != '') else None
     if not aria2_client.isAlive():
         raise Exception('*' * 10 + "Error:Please start aria2c rpc service" + '*' * 10)
     if save_path:
@@ -31,24 +33,31 @@ def build_py_file(data, no):
     return os.path.abspath(filename)
 
 
+def execute_python(data):
+    if 'id' in data:
+        filename = build_py_file(data["contents"], data["id"])
+    else:
+        filename = build_py_file(data["contents"], str(time.time()))
+    if IS_WINDOWS:
+        subprocess.call("python " + filename)
+    else:
+        os.system("python " + filename)
+
+
+topic_handler_map = {
+    'download': download_by_aria2,
+    'python': execute_python
+}
+
+
 def message_handler(msg):
     body = msg.body
     try:
         if body.startswith('{'):
             data = json.loads(body)
-            if data and data.has_key('topic'):
-                if data['topic'] == 'python':
-                    if data.has_key("id"):
-                        filename = build_py_file(data["contents"], data["id"])
-                    else:
-                        filename = build_py_file(data["contents"], str(time.time()))
-                    if IS_WINDOWS:
-                        subprocess.call("python " + filename)
-                    else:
-                        os.system("python " + filename)
-                    return
-                elif data["topic"].lower() == "download":
-                    download_aria2(data["contents"])
+            if data and 'topic' in data:
+                if data['topic'] in topic_handler_map:
+                    topic_handler_map.get(data['topic'])(data)
                     return
         print('ignore:' + str(msg))
     except Exception as e:
