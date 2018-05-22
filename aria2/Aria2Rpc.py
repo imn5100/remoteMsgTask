@@ -35,15 +35,18 @@ class Aria2JsonRpc(object):
             return False
 
     # urls 是url数组 否则传参错误 header \n分隔不同头
-    def addUris(self, urls, dir=None, out=None, header=None, conn=16):
+    def addUris(self, urls, dir=None, out=None, headers=None, conn=16):
         params = []
         download_config = {}
         if dir:
             download_config["dir"] = dir
         if out:
             download_config["out"] = out
-        if header:
-            download_config['header'] = header
+        if headers:
+            headers_str = ''
+            for (k, v) in headers.items():
+                headers_str += str(k) + ": " + v + "\n"
+            download_config['header'] = headers_str
         download_config['split'] = str(conn)
         download_config['max-connection-per-server'] = str(conn)
         params.append(urls)
