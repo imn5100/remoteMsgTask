@@ -34,17 +34,21 @@ class Aria2JsonRpc(object):
         except Exception:
             return False
 
-    # urls 是url数组 否则传参错误
-    def addUris(self, urls, dir=None, out=None):
+    # urls 是url数组 否则传参错误 header \n分隔不同头
+    def addUris(self, urls, dir=None, out=None, header=None, conn=16):
         params = []
         download_config = {}
         if dir:
             download_config["dir"] = dir
         if out:
             download_config["out"] = out
+        if header:
+            download_config['header'] = header
+        download_config['split'] = str(conn)
+        download_config['max-connection-per-server'] = str(conn)
         params.append(urls)
         params.append(download_config)
-        return self.execuetJsonRpcCmd("aria2.addUri", params)
+        print(self.execuetJsonRpcCmd("aria2.addUri", params))
 
     def addTorrent(self, path, dir=None, out=None):
         bits = open(path.decode("utf-8"), "rb").read()
